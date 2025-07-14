@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Resume Analyzer</title>
+    <title>Upload Resume</title>
 </head>
 <body>
-    <h1>Upload Resume</h1>
+    <h1>Resume Analyzer</h1>
     <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="resume" required>
+        <label>Select Resume:</label><br>
+        <input type="file" name="resume" required><br><br>
+
+        <label>Select Job Description:</label><br>
+        <select name="jd_file">
+            <option value="job_description.txt">Data Scientist</option>
+            <option value="job_description1.txt">Metaverse Engineer</option>
+        </select><br><br>
+
         <input type="submit" value="Analyze">
     </form>
 </body>
 </html>
-

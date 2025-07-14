@@ -1,0 +1,1 @@
+We are looking for a Data Scientist with experience in Python, machine learning, statistics, and data analysis. Familiarity with pandas, scikit-learn, and SQL is required.

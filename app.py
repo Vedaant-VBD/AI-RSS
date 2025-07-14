@@ -1,25 +1,12 @@
 from flask import Flask, render_template, request
 import os
-
-from models.parser import extract_text_from_pdf
+from models.parser import extract_text_from_pdf, extract_resume_sections
 from gemini_summary import summarize_with_gemini
+from semantic_score import compute_relevance
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "resumes"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Load job description once
-with open("job_description.txt", "r") as f:
-    job_description = f.read().lower()
-
-# Basic keyword extraction
-job_keywords = set(job_description.split())
-
-def calculate_match_score(resume_text):
-    resume_words = resume_text.lower().split()
-    matched = sum(1 for word in resume_words if word in job_keywords)
-    score = (matched / len(job_keywords)) * 100
-    return round(score, 2)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -29,13 +16,24 @@ def index():
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         resume.save(filepath)
 
-        text = extract_text_from_pdf(filepath)
+        # Choose which job description to load
+        jd_file = request.form.get("jd_file", "job_description1.txt")
+        with open(jd_file, "r") as f:
+            job_keywords = [line.strip() for line in f.readlines() if line.strip()]
 
-        # Score and summary
-        match_score = calculate_match_score(text)
-        summary = summarize_with_gemini(text)
+        # Parse resume
+        resume_text = extract_text_from_pdf(filepath)
+        sections = extract_resume_sections(resume_text)
 
-        return render_template("result.html", summary=summary, score=match_score)
+        # Smart scoring
+        experience_score = compute_relevance(job_keywords, sections["experience"])
+        skills_score = compute_relevance(job_keywords, sections["skills"])
+        final_score = round(0.6 * experience_score + 0.4 * skills_score, 2)
+
+        # Gemini Summary
+        summary = summarize_with_gemini(resume_text)
+
+        return render_template("result.html", score=final_score, summary=summary)
 
     return render_template("index.html")
 
