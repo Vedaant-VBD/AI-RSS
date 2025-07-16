@@ -1,6 +1,6 @@
 const { getSectionLinesByKeywords } = require('./lib/get-section-lines');
 const { divideSectionIntoSubsections } = require('./lib/subsections');
-const { DATE_FEATURE_SETS, getHasText, isBold } = require('./lib/common-features');
+const { DATE_FEATURE_SETS, getHasText, isBold, normalizeDegree } = require('./lib/common-features');
 const { getTextWithHighestFeatureScore } = require('./lib/feature-scoring-system');
 const { getBulletPointsFromLines, getDescriptionsLineIdx } = require('./lib/bullet-points');
 
@@ -44,6 +44,7 @@ const extractEducation = (sections) => {
     const textItems = subsectionLines.flat();
     const [school, schoolScores] = getTextWithHighestFeatureScore(textItems, SCHOOL_FEATURE_SETS);
     const [degree, degreeScores] = getTextWithHighestFeatureScore(textItems, DEGREE_FEATURE_SETS);
+    const normalizedDegree = normalizeDegree(degree);
     const [gpa, gpaScores] = getTextWithHighestFeatureScore(textItems, GPA_FEATURE_SETS);
     const [date, dateScores] = getTextWithHighestFeatureScore(textItems, DATE_FEATURE_SETS);
 
@@ -54,7 +55,7 @@ const extractEducation = (sections) => {
       descriptions = getBulletPointsFromLines(descriptionsLines);
     }
 
-    educations.push({ school, degree, gpa, date, descriptions });
+    educations.push({ school, degree: normalizedDegree, gpa, date, descriptions });
     educationsScores.push({ schoolScores, degreeScores, gpaScores, dateScores });
   }
 

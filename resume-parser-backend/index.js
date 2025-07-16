@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const Job = require('./job.model');
+const axios = require('axios');
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -123,9 +124,29 @@ app.post('/jobs', authenticateJWT, async (req, res) => {
     if (req.user.role !== 'recruiter' && req.user.role !== 'job_poster') {
       return res.status(403).json({ error: 'Only recruiters can post jobs.' });
     }
+
+    // AI-powered job description parsing (using HuggingFace Inference API for demonstration)
+    let descriptionStructured = null;
+    try {
+      const hfResp = await axios.post(
+        'https://api-inference.huggingface.co/models/facebook/bart-large-mnli',
+        { inputs: description },
+        { headers: { Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY || ''}` } }
+      );
+      // For demo, just echo back the input and output
+      descriptionStructured = {
+        original: description,
+        ai_summary: hfResp.data,
+      };
+    } catch (aiErr) {
+      console.error('AI parsing failed:', aiErr.message);
+      descriptionStructured = { original: description, ai_summary: null, error: aiErr.message };
+    }
+
     const job = new Job({
       title,
       description,
+      descriptionStructured, // Store the structured/AI-parsed version
       createdBy: req.user.userId,
     });
     await job.save();

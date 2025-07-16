@@ -1,6 +1,7 @@
 const { deepClone } = require('./lib/deep-clone');
 const { getSectionLinesByKeywords } = require('./lib/get-section-lines');
 const { getBulletPointsFromLines, getDescriptionsLineIdx } = require('./lib/bullet-points');
+const { normalizeSkill } = require('./lib/common-features');
 
 const initialFeaturedSkills = [
   { skill: "" },
@@ -42,7 +43,7 @@ const extractSkills = (sections) => {
   }
 
   // Split and flatten all skills from descriptions
-  const allSkills = splitSkillsFromDescriptions(descriptions);
+  const allSkills = splitSkillsFromDescriptions(descriptions).map(normalizeSkill);
 
   const skills = {
     featuredSkills,

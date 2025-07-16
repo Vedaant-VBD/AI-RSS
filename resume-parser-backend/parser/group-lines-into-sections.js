@@ -2,6 +2,7 @@ const {
   hasLetterAndIsAllUpperCase,
   hasOnlyLettersSpacesAmpersands,
   isBold,
+  fuzzyMatch,
 } = require("./extract-resume-from-sections/lib/common-features");
 
 const PROFILE_SECTION = "profile";
@@ -40,6 +41,25 @@ const SECTION_TITLE_PRIMARY_KEYWORDS = [
   "education",
   "project",
   "skill",
+  // CV-specific and international terms
+  "profile",
+  "summary",
+  "professional experience",
+  "work history",
+  "employment",
+  "academic background",
+  "qualifications",
+  "certifications",
+  "languages",
+  "publications",
+  "research",
+  "interests",
+  "achievements",
+  "awards",
+  "training",
+  "references",
+  "curriculum vitae",
+  "cv"
 ];
 const SECTION_TITLE_SECONDARY_KEYWORDS = [
   "job",
@@ -50,6 +70,17 @@ const SECTION_TITLE_SECONDARY_KEYWORDS = [
   "award",
   "honor",
   "project",
+  // More CV-specific
+  "personal information",
+  "contact",
+  "contact information",
+  "skills and competencies",
+  "technical skills",
+  "soft skills",
+  "volunteer",
+  "volunteering",
+  "affiliations",
+  "memberships"
 ];
 const SECTION_TITLE_KEYWORDS = [
   ...SECTION_TITLE_PRIMARY_KEYWORDS,
@@ -79,13 +110,14 @@ const isSectionTitle = (line, lineNumber) => {
     text.split(" ").filter((s) => s !== "&").length <= 2;
   const startsWithCapitalLetter = /[A-Z]/.test(text.slice(0, 1));
 
+  // Fuzzy match section header
+  const fuzzySection = fuzzyMatch(text.toLowerCase(), SECTION_TITLE_KEYWORDS.map(k => k.toLowerCase()), 0.75);
+
   if (
     textHasAtMost2Words &&
     hasOnlyLettersSpacesAmpersands(textItem) &&
     startsWithCapitalLetter &&
-    SECTION_TITLE_KEYWORDS.some((keyword) =>
-      text.toLowerCase().includes(keyword)
-    )
+    fuzzySection
   ) {
     return true;
   }
