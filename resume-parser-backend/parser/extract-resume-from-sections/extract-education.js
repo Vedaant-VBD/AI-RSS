@@ -35,40 +35,55 @@ const GPA_FEATURE_SETS = [
   [isBold, -4],
 ];
 
+function extractEducationFallback(sections) {
+  // Try to find education info anywhere in the text if not found in the standard section
+  const allLines = Object.values(sections).flat(2);
+  const degreeRegex = /(B\.? ?Tech|Bachelor|BSc|B\.Sc|M\.? ?Tech|Master|MSc|M\.Sc|PhD|Ph\.D|Doctor)/i;
+  const institutionRegex = /(IIT|Institute|University|School|College|Academy|GGSIPU|GGSIPU-EDC|GGSIPUEDC)/i;
+  let found = [];
+  for (const item of allLines) {
+    const text = item.text || '';
+    if (degreeRegex.test(text) || institutionRegex.test(text)) {
+      found.push({
+        school: institutionRegex.test(text) ? text.match(institutionRegex)[0] : '',
+        degree: degreeRegex.test(text) ? text.match(degreeRegex)[0] : '',
+        gpa: '',
+        date: '',
+        descriptions: [text],
+      });
+    }
+  }
+  return found;
+}
+
+const INSTITUTION_REGEX = /(College|University|Institute|School|Academy|BASIS|Magnet)/i;
+const DEGREE_REGEX = /(B\.? ?Tech|B\.? ?E|BSc|B\.Sc|Bachelor|M\.? ?Tech|M\.? ?E|MSc|M\.Sc|Master|PhD|Ph\.D|Doctor|Diploma|Grade \d+)/i;
+const COURSE_REGEX = /(Artificial Intelligence|Machine Learning|Computer Science|Data Science|Electronics|Mechanical|Civil|Information Technology|AIML|CS|IT|ECE|EEE|CSE|DS|AI|ML)/i;
+const DATE_REGEX = /(\d{4}|Current|Present|\d{2} [A-Za-z]{3,9} \d{4}|\w+ \d{4}|\d{4} – \w+ \d{4})/i;
+
 const extractEducation = (sections) => {
   const educations = [];
-  const educationsScores = [];
-  const lines = getSectionLinesByKeywords(sections, ["education"]);
-  const subsections = divideSectionIntoSubsections(lines);
-  for (const subsectionLines of subsections) {
-    const textItems = subsectionLines.flat();
-    const [school, schoolScores] = getTextWithHighestFeatureScore(textItems, SCHOOL_FEATURE_SETS);
-    const [degree, degreeScores] = getTextWithHighestFeatureScore(textItems, DEGREE_FEATURE_SETS);
-    const normalizedDegree = normalizeDegree(degree);
-    const [gpa, gpaScores] = getTextWithHighestFeatureScore(textItems, GPA_FEATURE_SETS);
-    const [date, dateScores] = getTextWithHighestFeatureScore(textItems, DATE_FEATURE_SETS);
-
-    let descriptions = [];
-    const descriptionsLineIdx = getDescriptionsLineIdx(subsectionLines);
-    if (descriptionsLineIdx !== undefined) {
-      const descriptionsLines = subsectionLines.slice(descriptionsLineIdx);
-      descriptions = getBulletPointsFromLines(descriptionsLines);
-    }
-
-    educations.push({ school, degree: normalizedDegree, gpa, date, descriptions });
-    educationsScores.push({ schoolScores, degreeScores, gpaScores, dateScores });
-  }
-
-  if (educations.length !== 0) {
-    const coursesLines = getSectionLinesByKeywords(sections, ["course"]);
-    if (coursesLines.length !== 0) {
-      educations[0].descriptions.push(
-        "Courses: " + coursesLines.flat().map((item) => item.text).join(" ")
-      );
+  const lines = getSectionLinesByKeywords(sections, ["education"]).flat();
+  let current = null;
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i].text.trim();
+    const isInstitution = INSTITUTION_REGEX.test(text);
+    const isDegree = DEGREE_REGEX.test(text);
+    if (isInstitution || isDegree) {
+      if (current) educations.push(current);
+      current = { degree: '', course: '', college: '', date: '', descriptions: [] };
+      if (isInstitution) current.college = text;
+      if (isDegree) current.degree = text.match(DEGREE_REGEX)[0];
+      if (COURSE_REGEX.test(text)) current.course = text.match(COURSE_REGEX)[0];
+      if (DATE_REGEX.test(text)) current.date = text.match(DATE_REGEX)[0];
+    } else if (current) {
+      if (!current.course && COURSE_REGEX.test(text)) current.course = text.match(COURSE_REGEX)[0];
+      if (!current.date && DATE_REGEX.test(text)) current.date = text.match(DATE_REGEX)[0];
+      current.descriptions.push(text);
     }
   }
-
-  return { educations, educationsScores };
+  if (current) educations.push(current);
+  return educations;
 };
 
 module.exports = { extractEducation }; 

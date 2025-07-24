@@ -2,7 +2,6 @@ const { extractEducation } = require('./extract-education');
 const { extractWorkExperience } = require('./extract-work-experience');
 const { extractProject } = require('./extract-project');
 const { extractSkills } = require('./extract-skills');
-const { extractProfile } = require('./extract-profile');
 
 /**
  * Step 4. Extract resume from sections.
@@ -19,21 +18,11 @@ const { extractProfile } = require('./extract-profile');
  * feature score is identified as the extracted resume attribute.
  */
 const extractResumeFromSections = (sections) => {
-  const { profile } = extractProfile(sections);
-  const { educations } = extractEducation(sections);
-  const { workExperiences } = extractWorkExperience(sections);
-  const { projects } = extractProject(sections);
-  const { skills } = extractSkills(sections);
-
   return {
-    profile,
-    educations,
-    workExperiences,
-    projects,
-    skills,
-    custom: {
-      descriptions: [],
-    },
+    education: extractEducation(sections),
+    workExperience: extractWorkExperience(sections),
+    skills: extractSkills(sections),
+    projects: extractProject(sections),
   };
 };
 

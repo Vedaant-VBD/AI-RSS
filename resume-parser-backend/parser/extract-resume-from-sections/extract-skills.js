@@ -24,33 +24,34 @@ function splitSkillsFromDescriptions(descriptions) {
     .filter(Boolean);
 }
 
-const extractSkills = (sections) => {
-  const lines = getSectionLinesByKeywords(sections, SKILL_SECTION_KEYWORDS);
-  const descriptionsLineIdx = getDescriptionsLineIdx(lines) ?? 0;
-  const descriptionsLines = lines.slice(descriptionsLineIdx);
-  const descriptions = getBulletPointsFromLines(descriptionsLines);
-
-  const featuredSkills = initialFeaturedSkills.map(s => ({ ...s }));
-  if (descriptionsLineIdx !== 0) {
-    const featuredSkillsLines = lines.slice(0, descriptionsLineIdx);
-    const featuredSkillsTextItems = featuredSkillsLines
-      .flat()
-      .filter(item => item.text && item.text.trim())
-      .slice(0, 6);
-    for (let i = 0; i < featuredSkillsTextItems.length; i++) {
-      featuredSkills[i].skill = featuredSkillsTextItems[i].text;
+function extractSkillsFallback(sections) {
+  // Try to find skills info anywhere in the text if not found in the standard section
+  const allLines = Object.values(sections).flat(2);
+  const skillRegex = /python|java|c#|c\+\+|ml|machine learning|scikit-learn|tensorflow|sql|git|docker|unity|opencv|react|javascript|html|css|blockchain|vr|game|leadership|problem solving|communication|dsa/i;
+  let found = [];
+  for (const item of allLines) {
+    const text = item.text || '';
+    const matches = text.match(new RegExp(skillRegex, 'gi'));
+    if (matches) {
+      found.push(...matches.map(s => s.trim()));
     }
   }
+  // Remove duplicates
+  return Array.from(new Set(found));
+}
 
-  // Split and flatten all skills from descriptions
-  const allSkills = splitSkillsFromDescriptions(descriptions).map(normalizeSkill);
-
-  const skills = {
-    featuredSkills,
-    descriptions: allSkills,
-  };
-
-  return { skills };
+const SKILL_REGEX = /[a-zA-Z\+\#\.\-]+/g;
+const extractSkills = (sections) => {
+  const lines = getSectionLinesByKeywords(sections, ["skill"]);
+  // Flatten and extract skill-like words/phrases
+  const skills = lines.flat()
+    .map(item => item.text)
+    .filter(Boolean)
+    .flatMap(text => (text.match(SKILL_REGEX) || []))
+    .map(skill => skill.trim())
+    .filter(skill => skill.length > 1);
+  // Remove duplicates
+  return Array.from(new Set(skills));
 };
 
 module.exports = { extractSkills }; 

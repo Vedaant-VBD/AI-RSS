@@ -171,6 +171,89 @@ app.get('/jobs', authenticateJWT, async (req, res) => {
   }
 });
 
+// Utility: Score a resume against a job description (priority: experience > education > skills)
+function scoreResume(resume, job) {
+  // Extract job requirements
+  const jobReq = job.descriptionStructured?.ai_summary || {};
+  // For demo, expect jobReq to have .skills (array), .degree (string), .experience (years or string)
+  // Fallback to empty if not present
+  const requiredSkills = (jobReq.skills || []).map(s => s.toLowerCase());
+  const requiredDegree = (jobReq.degree || '').toLowerCase();
+  const requiredExperience = parseFloat(jobReq.experience) || 0;
+
+  // Extract from resume
+  const resumeSkills = (resume.skills?.descriptions || []).map(s => s.toLowerCase());
+  const resumeDegrees = (resume.educations || []).map(e => (e.degree || '').toLowerCase());
+  const resumeExperienceYears = (() => {
+    // Try to estimate total years from workExperiences
+    if (!resume.workExperiences) return 0;
+    let years = 0;
+    for (const exp of resume.workExperiences) {
+      if (exp.date) {
+        // Try to parse years from date string (very basic)
+        const matches = exp.date.match(/(\d{4})/g);
+        if (matches && matches.length >= 2) {
+          years += Math.abs(parseInt(matches[1]) - parseInt(matches[0]));
+        }
+      }
+    }
+    return years;
+  })();
+
+  // Experience score (0-1)
+  let expScore = 0;
+  if (requiredExperience > 0) {
+    expScore = Math.min(resumeExperienceYears / requiredExperience, 1);
+  } else {
+    expScore = resumeExperienceYears > 0 ? 1 : 0;
+  }
+
+  // Education score (0-1)
+  let eduScore = 0;
+  if (requiredDegree) {
+    eduScore = resumeDegrees.some(d => d.includes(requiredDegree)) ? 1 : 0;
+  } else {
+    eduScore = resumeDegrees.length > 0 ? 1 : 0;
+  }
+
+  // Skills score (0-1)
+  let skillScore = 0;
+  if (requiredSkills.length > 0) {
+    const matched = requiredSkills.filter(req => resumeSkills.some(s => s.includes(req)));
+    skillScore = matched.length / requiredSkills.length;
+  } else {
+    skillScore = resumeSkills.length > 0 ? 1 : 0;
+  }
+
+  // Weighted total: experience 50%, education 30%, skills 20%
+  const total = expScore * 0.5 + eduScore * 0.3 + skillScore * 0.2;
+  return { total, expScore, eduScore, skillScore, resumeExperienceYears, resumeDegrees, resumeSkills };
+}
+
+// POST /match-resumes?jobId=... - returns ranked resumes for a job
+app.get('/match-resumes', authenticateJWT, async (req, res) => {
+  const jobId = req.query.jobId;
+  if (!jobId) return res.status(400).json({ error: 'jobId required' });
+  try {
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    // Fetch all resumes from MongoDB (native driver)
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const resumesRaw = await db.collection('resumes').find({}).toArray();
+    const resumes = resumesRaw.map(r => r.parsedResume);
+    // Score and rank
+    const scored = resumes.map(r => ({ resume: r, score: scoreResume(r, job) }));
+    scored.sort((a, b) => b.score.total - a.score.total);
+    res.json(scored);
+    await client.close();
+  } catch (err) {
+    console.error('Match resumes error:', err);
+    res.status(500).json({ error: 'Failed to match resumes.' });
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);
