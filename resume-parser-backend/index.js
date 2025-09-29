@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 
 const Job = require('./job.model');
 const embeddingService = require('./embedding-service');
+const path = require('path');
 
 // Add JWT_SECRET definition at the top
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
@@ -555,6 +556,23 @@ app.use(cors({
 
 app.use(express.json());
 
+app.post('/ai-summary', async (req, res) => {
+  try {
+    const resume = req.body.resume;
+    if (!resume) {
+      return res.status(400).json({ error: 'No resume provided.' });
+    }
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `You are an expert recruiter. Read the following candidate resume and write a concise, insightful summary of their professional background, key skills, and suitability for data science or technical roles. Highlight strengths, unique experiences, and any red flags.\n\nResume:\n${JSON.stringify(resume, null, 2)}\n\nSummary:`;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    res.json({ summary: response.text() });
+  } catch (error) {
+    console.error('Error generating AI summary:', error);
+    res.status(500).json({ error: 'Failed to generate AI summary.' });
+  }
+});
+
 // Simple, working MongoDB connection (reverted from complex database manager)
 async function connectToMongoDB() {
   try {
@@ -622,6 +640,7 @@ app.post('/upload', upload.single('resume'), async (req, res) => {
       parsedResume: parsedResume,
       embedding: embedding,
       uploadedAt: new Date(),
+      filePath: req.file.path, // Save the file path
     });
     await client.close();
 
@@ -859,6 +878,23 @@ app.get('/jobs/:jobId/match', async (req, res) => {
     console.error('Error in /jobs/:jobId/match:', err);
     res.status(500).json({ error: 'Failed to match resumes.' });
   }
+});
+
+app.get('/resumes/:id/file', async (req, res) => {
+  const { id } = req.params;
+  // Fetch the resume document from MongoDB
+  const { MongoClient, ObjectId } = require('mongodb');
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  const db = client.db('resumeParserDB');
+  const resumeDoc = await db.collection('resumes').findOne({ _id: new ObjectId(id) });
+  await client.close();
+
+  if (!resumeDoc || !resumeDoc.filePath) {
+    return res.status(404).json({ error: 'Resume file not found.' });
+  }
+  const filePath = path.resolve(resumeDoc.filePath);
+  res.sendFile(filePath);
 });
 
 // Start server only after MongoDB connection is established

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Match {
   score: number;
@@ -61,6 +61,13 @@ export default function CandidateMatches({
   onSortChange 
 }: CandidateMatchesProps) {
   const [expandedResumes, setExpandedResumes] = useState<{ [key: string]: boolean }>({});
+  // Modal state for expanded resume
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<Match | null>(null);
+  // AI summary state
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const toggleExpanded = (resumeKey: string) => {
     setExpandedResumes(prev => ({
@@ -68,6 +75,44 @@ export default function CandidateMatches({
       [resumeKey]: !prev[resumeKey]
     }));
   };
+
+  const openResumeModal = (candidate: Match) => {
+    setSelectedCandidate(candidate);
+    setModalOpen(true);
+  };
+
+  const closeResumeModal = () => {
+    setModalOpen(false);
+    setSelectedCandidate(null);
+    setAiSummary(null);
+    setSummaryError(null);
+  };
+
+  // Fetch AI summary when modal opens and candidate changes
+  useEffect(() => {
+    if (modalOpen && selectedCandidate) {
+      setAiSummary(null);
+      setSummaryError(null);
+      setSummaryLoading(true);
+      fetch('http://localhost:4000/ai-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resume: selectedCandidate.resume?.parsedResume })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.summary) {
+            setAiSummary(data.summary);
+          } else {
+            setSummaryError('No summary returned.');
+          }
+        })
+        .catch(err => {
+          setSummaryError('Failed to fetch summary.');
+        })
+        .finally(() => setSummaryLoading(false));
+    }
+  }, [modalOpen, selectedCandidate]);
 
   const sortedMatches = [...matches].sort((a, b) => {
     switch (sortBy) {
@@ -220,10 +265,10 @@ export default function CandidateMatches({
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     className="btn-secondary"
-                    onClick={() => toggleExpanded(resumeKey)}
+                    onClick={() => openResumeModal(match)}
                     style={{ fontSize: 14 }}
                   >
-                    {expanded ? '👁️ Hide Details' : '👁️ View Details'}
+                    📄 Expand Resume
                   </button>
                   <button
                     className="btn-primary"
@@ -412,6 +457,59 @@ export default function CandidateMatches({
           );
         })}
       </div>
+      {modalOpen && selectedCandidate && (
+        <div className="resume-modal-overlay">
+          <div className="resume-modal">
+            <button className="close-btn" onClick={closeResumeModal}>&times;</button>
+            {/* Two-pane layout will be implemented next */}
+            <div style={{ display: 'flex', height: '80vh', width: '80vw' }}>
+              <div style={{ flex: 1, overflowY: 'auto', background: '#222', color: '#fff', padding: 24 }}>
+                <h3>Resume</h3>
+                <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(selectedCandidate.resume?.parsedResume, null, 2)}</pre>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', background: '#111', color: '#fff', padding: 24 }}>
+                <h3>AI Summary</h3>
+                {summaryLoading && <div>Loading summary...</div>}
+                {summaryError && <div style={{ color: 'red' }}>{summaryError}</div>}
+                {aiSummary && <div style={{ whiteSpace: 'pre-wrap' }}>{aiSummary}</div>}
+              </div>
+            </div>
+          </div>
+          <style jsx>{`
+            .resume-modal-overlay {
+              position: fixed;
+              top: 0; left: 0; right: 0; bottom: 0;
+              background: rgba(0,0,0,0.7);
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .resume-modal {
+              background: #181818;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+              position: relative;
+              min-width: 60vw;
+              min-height: 60vh;
+              max-width: 90vw;
+              max-height: 90vh;
+              overflow: hidden;
+            }
+            .close-btn {
+              position: absolute;
+              top: 12px;
+              right: 20px;
+              font-size: 2rem;
+              background: none;
+              border: none;
+              color: #fff;
+              cursor: pointer;
+              z-index: 10;
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
