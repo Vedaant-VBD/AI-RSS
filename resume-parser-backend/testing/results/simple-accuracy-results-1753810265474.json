@@ -1,0 +1,94 @@
+{
+  "timestamp": "2025-07-29T17:31:05.475Z",
+  "overallScore": 0.3,
+  "grade": "F (Needs Major Improvement)",
+  "componentScores": {
+    "embeddingQuality": 0,
+    "resumeParsing": 1,
+    "matchingConsistency": 0
+  },
+  "detailedResults": {
+    "embeddingTests": {
+      "accuracy": 0,
+      "totalTests": 5,
+      "correctPredictions": 0,
+      "details": [
+        {
+          "description": "Similar tech roles",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "correct": false
+        },
+        {
+          "description": "Similar Java roles",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "correct": false
+        },
+        {
+          "description": "Similar ML roles",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "correct": false
+        },
+        {
+          "description": "Completely different fields",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "correct": false
+        },
+        {
+          "description": "Tech vs Marketing",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "correct": false
+        }
+      ]
+    },
+    "parsingTests": {
+      "accuracy": 1,
+      "totalFields": 4,
+      "correctExtractions": 4,
+      "details": [
+        {
+          "extracted": {
+            "name": "John Doe",
+            "skills": "javascript, react, node.js, java, mongodb, html, css",
+            "hasExperience": true,
+            "hasEducation": true,
+            "summary": "Experienced software engineer with 5 years of experience in JavaScript, React, and Node.js."
+          },
+          "expected": {
+            "name": "John Doe",
+            "skills": [
+              "javascript",
+              "react",
+              "node.js",
+              "mongodb"
+            ],
+            "hasExperience": true,
+            "hasEducation": true
+          }
+        }
+      ]
+    },
+    "matchingTests": {
+      "consistency": 0,
+      "totalTests": 2,
+      "consistentResults": 0,
+      "details": [
+        {
+          "test": "similar_scores",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "consistent": false
+        },
+        {
+          "test": "different_scores",
+          "error": "Failed to spawn Python process: spawn C:\\Users\\aarav\\airss\\venv\\Scripts\\python.exe ENOENT",
+          "consistent": false
+        }
+      ]
+    },
+    "overallScore": 0.3
+  },
+  "recommendations": [
+    "Embedding quality is low. Consider using a better sentence transformer model.",
+    "Matching consistency is low. Review scoring algorithm and weights.",
+    "Overall system performance is below acceptable levels. Focus on core algorithm improvements."
+  ]
+}

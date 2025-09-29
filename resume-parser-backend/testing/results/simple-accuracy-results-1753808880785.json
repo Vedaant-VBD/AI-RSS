@@ -1,0 +1,94 @@
+{
+  "timestamp": "2025-07-29T17:08:00.786Z",
+  "overallScore": 0.3,
+  "grade": "F (Needs Major Improvement)",
+  "componentScores": {
+    "embeddingQuality": 0,
+    "resumeParsing": 1,
+    "matchingConsistency": 0
+  },
+  "detailedResults": {
+    "embeddingTests": {
+      "accuracy": 0,
+      "totalTests": 5,
+      "correctPredictions": 0,
+      "details": [
+        {
+          "description": "Similar tech roles",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "correct": false
+        },
+        {
+          "description": "Similar Java roles",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "correct": false
+        },
+        {
+          "description": "Similar ML roles",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "correct": false
+        },
+        {
+          "description": "Completely different fields",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "correct": false
+        },
+        {
+          "description": "Tech vs Marketing",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "correct": false
+        }
+      ]
+    },
+    "parsingTests": {
+      "accuracy": 1,
+      "totalFields": 4,
+      "correctExtractions": 4,
+      "details": [
+        {
+          "extracted": {
+            "name": "John Doe",
+            "skills": "javascript, react, node.js, java, mongodb, html, css",
+            "hasExperience": true,
+            "hasEducation": true,
+            "summary": "Experienced software engineer with 5 years of experience in JavaScript, React, and Node.js."
+          },
+          "expected": {
+            "name": "John Doe",
+            "skills": [
+              "javascript",
+              "react",
+              "node.js",
+              "mongodb"
+            ],
+            "hasExperience": true,
+            "hasEducation": true
+          }
+        }
+      ]
+    },
+    "matchingTests": {
+      "consistency": 0,
+      "totalTests": 2,
+      "consistentResults": 0,
+      "details": [
+        {
+          "test": "similar_scores",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "consistent": false
+        },
+        {
+          "test": "different_scores",
+          "error": "Python script failed (code 1): Traceback (most recent call last):\r\n  File \"C:\\Users\\aarav\\airss\\resume-parser\\resume-parser-backend\\generate_embedding.py\", line 9, in <module>\r\n    from sentence_transformers import SentenceTransformer\r\nModuleNotFoundError: No module named 'sentence_transformers'\r\n",
+          "consistent": false
+        }
+      ]
+    },
+    "overallScore": 0.3
+  },
+  "recommendations": [
+    "Embedding quality is low. Consider using a better sentence transformer model.",
+    "Matching consistency is low. Review scoring algorithm and weights.",
+    "Overall system performance is below acceptable levels. Focus on core algorithm improvements."
+  ]
+}

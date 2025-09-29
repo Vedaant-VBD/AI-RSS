@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-work-experience.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-skills.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-project.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-profile.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-education.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-resume-from-sections.test.js", "src/app/parse-resume-from-pdf/extract-resume-from-sections/extract-profile.js"],
   "exclude": ["node_modules"]
 }

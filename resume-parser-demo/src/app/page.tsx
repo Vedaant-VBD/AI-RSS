@@ -64,22 +64,21 @@ export default function Home() {
     setUploading(true);
     setMessage("");
     setParsedResume(null);
-    const formData = new FormData();
-    formData.append("resume", file);
+    
     try {
-      const res = await fetch("http://localhost:4000/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage("✅ Resume uploaded and parsed successfully!");
-        setParsedResume(data.parsedResume);
-      } else {
-        setMessage(`❌ ${data.error || "Failed to upload resume"}`);
-      }
+      // Parse PDF on client-side to avoid server-side issues
+      const { parseResumeFromPdf } = await import("./parse-resume-from-pdf");
+      const fileUrl = URL.createObjectURL(file);
+      const parsedResume = await parseResumeFromPdf(fileUrl);
+      
+      setMessage("✅ Resume parsed successfully!");
+      setParsedResume(parsedResume);
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(fileUrl);
     } catch (err) {
-      setMessage("❌ Network error - please check if backend is running");
+      setMessage("❌ Failed to parse resume - please check the PDF format");
+      console.error("Parse error:", err);
     } finally {
       setUploading(false);
     }

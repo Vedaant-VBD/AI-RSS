@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseResumeFromPdf } from "../../parse-resume-from-pdf";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -9,16 +8,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
-  // Convert Blob to Buffer
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  // Parse the resume
+  // For now, just return success and let client-side handle PDF parsing
+  // This avoids server-side PDF.js issues during deployment
   try {
-    const parsedResume = await parseResumeFromPdf(buffer);
-    // Here you could insert parsedResume and file into MongoDB
-    return NextResponse.json({ message: "Resume parsed!", parsedResume });
+    // Here you could save the file to storage and return a file ID
+    // For demo purposes, just return success
+    return NextResponse.json({ 
+      message: "File uploaded successfully! Please parse on client-side.", 
+      fileSize: file.size,
+      fileName: (file as File).name 
+    });
   } catch (err) {
-    return NextResponse.json({ error: "Failed to parse resume." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to upload file." }, { status: 500 });
   }
 } 

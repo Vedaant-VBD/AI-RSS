@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-07-29T17:40:14.873Z",
+  "overallScore": 0.8400000000000001,
+  "grade": "A (Very Good)",
+  "componentScores": {
+    "embeddingQuality": 0.6,
+    "resumeParsing": 1,
+    "matchingConsistency": 1
+  },
+  "detailedResults": {
+    "embeddingTests": {
+      "accuracy": 0.6,
+      "totalTests": 5,
+      "correctPredictions": 3,
+      "details": [
+        {
+          "description": "Similar tech roles",
+          "error": "Embedding generation timed out",
+          "correct": false
+        },
+        {
+          "description": "Similar Java roles",
+          "error": "Python script failed (code 1): Error: (MaxRetryError(\"HTTPSConnectionPool(host='huggingface.co', port=443): Max retries exceeded with url: /api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main/additional_chat_templates?recursive=False&expand=False (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x00000256A3671590>: Failed to establish a new connection: [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions'))\"), '(Request ID: d899341f-60a9-49e5-a341-ab284b88fdfb)')\r\n",
+          "correct": false
+        },
+        {
+          "description": "Similar ML roles",
+          "similarity": "0.648",
+          "expected": "high",
+          "actual": "high",
+          "correct": true
+        },
+        {
+          "description": "Completely different fields",
+          "similarity": "0.203",
+          "expected": "low",
+          "actual": "low",
+          "correct": true
+        },
+        {
+          "description": "Tech vs Marketing",
+          "similarity": "0.179",
+          "expected": "low",
+          "actual": "low",
+          "correct": true
+        }
+      ]
+    },
+    "parsingTests": {
+      "accuracy": 1,
+      "totalFields": 4,
+      "correctExtractions": 4,
+      "details": [
+        {
+          "extracted": {
+            "name": "John Doe",
+            "skills": "javascript, react, node.js, java, mongodb, html, css",
+            "hasExperience": true,
+            "hasEducation": true,
+            "summary": "Experienced software engineer with 5 years of experience in JavaScript, React, and Node.js."
+          },
+          "expected": {
+            "name": "John Doe",
+            "skills": [
+              "javascript",
+              "react",
+              "node.js",
+              "mongodb"
+            ],
+            "hasExperience": true,
+            "hasEducation": true
+          }
+        }
+      ]
+    },
+    "matchingTests": {
+      "consistency": 1,
+      "totalTests": 2,
+      "consistentResults": 2,
+      "details": [
+        {
+          "test": "similar_scores",
+          "score1": "0.759",
+          "score2": "0.793",
+          "difference": "0.033",
+          "consistent": true
+        },
+        {
+          "test": "different_scores",
+          "score1": "0.831",
+          "score2": "0.334",
+          "difference": "0.497",
+          "consistent": true
+        }
+      ]
+    },
+    "overallScore": 0.8400000000000001
+  },
+  "recommendations": [
+    "Embedding quality is low. Consider using a better sentence transformer model."
+  ] 
+}

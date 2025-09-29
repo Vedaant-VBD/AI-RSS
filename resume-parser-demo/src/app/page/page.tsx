@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { parseResumeFromPdf } from "../parse-resume-from-pdf";
 
 // Resume profile section
 type ResumeProfile = {
@@ -60,6 +59,9 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
     const fileUrl = URL.createObjectURL(file);
+    
+    // Dynamic import to avoid server-side rendering issues
+    const { parseResumeFromPdf } = await import("../parse-resume-from-pdf");
     const parsed = await parseResumeFromPdf(fileUrl);
     setResume(parsed);
     // You can now use `parsed` for further function calls

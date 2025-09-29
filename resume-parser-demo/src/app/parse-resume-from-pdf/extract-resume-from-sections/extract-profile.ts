@@ -1,11 +1,11 @@
-import type { TextItem, ResumeSectionToLines } from "../types";
-const { getSectionLinesByKeywords } = require("./lib/get-section-lines");
-const { isBold, hasNumber, hasComma, hasLetter, hasLetterAndIsAllUpperCase } = require("./lib/common-features");
-const { getTextWithHighestFeatureScore } = require("./lib/feature-scoring-system");
+import type { TextItem, ResumeSectionToLines, FeatureSet } from "../types";
+import { getSectionLinesByKeywords } from "./lib/get-section-lines";
+import { isBold, hasNumber, hasComma, hasLetter, hasLetterAndIsAllUpperCase } from "./lib/common-features";
+import { getTextWithHighestFeatureScore } from "./lib/feature-scoring-system";
 
-// Name: allow hyphens, apostrophes, and unicode letters
+// Name: allow hyphens, apostrophes, and letters (including accented characters)
 export const matchOnlyNameLike = (item: TextItem) =>
-  item.text.match(/^[\p{L}\s\.\-\'\u2019]+$/u);
+  item.text.match(/^[a-zA-ZÀ-ÿ\s\.\-\'\u2019]+$/);
 
 // Email
 // Simple email regex: xxx@xxx.xxx (xxx = anything not space)
@@ -51,7 +51,7 @@ const has4OrMoreWords = (item: TextItem) => item.text.split(" ").length >= 4;
  *         (it isn't common to include middle initial in resume)
  *      -> is bolded or has all letters as uppercase
  */
-const NAME_FEATURE_SETS = [
+const NAME_FEATURE_SETS: FeatureSet[] = [
   [matchOnlyNameLike, 3, true],
   [isBold, 2],
   [hasLetterAndIsAllUpperCase, 2],
@@ -65,7 +65,7 @@ const NAME_FEATURE_SETS = [
 ];
 
 // Email -> match email regex xxx@xxx.xxx
-const EMAIL_FEATURE_SETS = [
+const EMAIL_FEATURE_SETS: FeatureSet[] = [
   [matchEmail, 4, true],
   [isBold, -1], // Name
   [hasLetterAndIsAllUpperCase, -1], // Name
@@ -75,13 +75,13 @@ const EMAIL_FEATURE_SETS = [
   [has4OrMoreWords, -4], // Summary
 ];
 
-const PHONE_FEATURE_SETS = [
+const PHONE_FEATURE_SETS: FeatureSet[] = [
   [matchFlexiblePhone, 4, true],
   [hasLetter, -4],
 ];
 
 // Location -> match location regex <City>, <ST>
-const LOCATION_FEATURE_SETS = [
+const LOCATION_FEATURE_SETS: FeatureSet[] = [
   [matchCityAndState, 4, true],
   [isBold, -1], // Name
   [hasAt, -4], // Email
@@ -90,7 +90,7 @@ const LOCATION_FEATURE_SETS = [
 ];
 
 // URL -> match url regex xxx.xxx/xxx
-const URL_FEATURE_SETS = [
+const URL_FEATURE_SETS: FeatureSet[] = [
   [matchUrl, 4, true],
   [matchUrlHttpFallback, 3, true],
   [matchUrlWwwFallback, 3, true],
@@ -102,7 +102,7 @@ const URL_FEATURE_SETS = [
 ];
 
 // Summary -> has 4 or more words
-const SUMMARY_FEATURE_SETS = [
+const SUMMARY_FEATURE_SETS: FeatureSet[] = [
   [has4OrMoreWords, 4],
   [isBold, -1], // Name
   [hasAt, -4], // Email

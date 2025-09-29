@@ -173,6 +173,345 @@ function calculateEducationDetailQuality(educations) {
 }
 
 /**
+ * IMPROVED: Extract job skills with better accuracy
+ */
+function extractJobSkills(job) {
+  let jobSkills = [];
+  
+  // Enhanced skill extraction patterns
+  const skillPatterns = [
+    // More specific patterns for better extraction
+    /(?:required|must have|essential|mandatory)[\s\S]*?(?:skills?|technologies?|experience)[:\s]*([\w\s,.\-\/\+\#]+?)(?:\n|$|\.)/gi,
+    /(?:skills?|technologies?|tech stack)[:\s]*([\w\s,.\-\/\+\#]+?)(?:\n|$|\.)/gi,
+    /(?:experience (?:with|in)|proficient (?:with|in)|knowledge of)[:\s]*([\w\s,.\-\/\+\#]+?)(?:\n|$|\.)/gi,
+    /(?:programming languages?|frameworks?|tools?)[:\s]*([\w\s,.\-\/\+\#]+?)(?:\n|$|\.)/gi
+  ];
+
+  // Try enhanced description first
+  const textToAnalyze = job.enhancedDescription || job.description;
+  
+  for (const pattern of skillPatterns) {
+    const matches = textToAnalyze.matchAll(pattern);
+    for (const match of matches) {
+      if (match[1]) {
+        const extractedSkills = match[1]
+          .split(/[,\n\r\-•|&]/)
+          .map(s => s.trim().toLowerCase())
+          .filter(s => s.length > 1 && s.length < 40)
+          .filter(s => !s.match(/^\d+$/)) // Remove pure numbers
+          .filter(s => !s.match(/^(and|or|the|a|an|in|on|at|to|for|of|with)$/)); // Remove common words
+        jobSkills.push(...extractedSkills);
+      }
+    }
+  }
+
+  // Enhanced universal skills database with synonyms
+  const skillDatabase = {
+    // Programming Languages
+    'javascript': ['js', 'javascript', 'ecmascript', 'node.js', 'nodejs'],
+    'python': ['python', 'py', 'python3'],
+    'java': ['java', 'jvm'],
+    'typescript': ['typescript', 'ts'],
+    'react': ['react', 'reactjs', 'react.js'],
+    'angular': ['angular', 'angularjs', 'angular.js'],
+    'vue': ['vue', 'vuejs', 'vue.js'],
+    'node': ['node', 'nodejs', 'node.js'],
+    'express': ['express', 'expressjs', 'express.js'],
+    'mongodb': ['mongodb', 'mongo'],
+    'postgresql': ['postgresql', 'postgres', 'psql'],
+    'mysql': ['mysql'],
+    'sql': ['sql', 'database'],
+    'html': ['html', 'html5'],
+    'css': ['css', 'css3', 'styling'],
+    'aws': ['aws', 'amazon web services', 'cloud'],
+    'docker': ['docker', 'containerization'],
+    'kubernetes': ['kubernetes', 'k8s'],
+    'git': ['git', 'github', 'gitlab', 'version control'],
+    
+    // Business Skills
+    'management': ['management', 'managing', 'leadership'],
+    'communication': ['communication', 'communicating'],
+    'teamwork': ['teamwork', 'collaboration', 'team player'],
+    'project management': ['project management', 'pm', 'agile', 'scrum'],
+    'analysis': ['analysis', 'analytical', 'analyze'],
+    
+    // Other domains
+    'marketing': ['marketing', 'digital marketing', 'seo', 'sem'],
+    'sales': ['sales', 'selling', 'business development'],
+    'design': ['design', 'ui', 'ux', 'user experience', 'user interface']
+  };
+
+  // If no skills found through patterns, use enhanced keyword matching
+  if (jobSkills.length === 0) {
+    const lowerText = textToAnalyze.toLowerCase();
+    
+    for (const [mainSkill, synonyms] of Object.entries(skillDatabase)) {
+      for (const synonym of synonyms) {
+        if (lowerText.includes(synonym)) {
+          jobSkills.push(mainSkill);
+          break; // Only add once per main skill
+        }
+      }
+    }
+  }
+
+  // Clean up and deduplicate
+  jobSkills = [...new Set(jobSkills)]
+    .filter(Boolean)
+    .filter(skill => skill.length > 1)
+    .slice(0, 25); // Limit to prevent noise
+
+  return jobSkills;
+}
+
+/**
+ * IMPROVED: Extract resume skills with better accuracy
+ */
+function extractResumeSkills(parsedResume) {
+  if (!parsedResume) return [];
+  
+  let resumeSkills = [];
+  
+  // Multiple skill sources with priority
+  const skillSources = [
+    parsedResume.skills,
+    parsedResume.technicalSkills,
+    parsedResume.technologies,
+    parsedResume.skills?.featuredSkills,
+    parsedResume.skills?.descriptions,
+    parsedResume.summary, // Skills often mentioned in summary
+    parsedResume.experience // Skills mentioned in experience
+  ].filter(Boolean);
+
+  for (const skillSource of skillSources) {
+    try {
+      if (typeof skillSource === 'string') {
+        // Enhanced skill extraction from text
+        const extracted = skillSource
+          .split(/[,\n\r\-•|&;]/)
+          .map(s => s.trim().toLowerCase())
+          .filter(s => s.length > 1 && s.length < 40)
+          .filter(s => !s.match(/^\d+$/)) // Remove pure numbers
+          .filter(s => !s.match(/^(and|or|the|a|an|in|on|at|to|for|of|with|years?|months?|experience)$/));
+        resumeSkills.push(...extracted);
+        
+      } else if (Array.isArray(skillSource)) {
+        const extracted = skillSource
+          .map(s => {
+            if (typeof s === 'object' && s.skill) {
+              return s.skill.split(/[,;:|]/).map(skill => skill.trim()).filter(Boolean);
+            }
+            return String(s);
+          })
+          .flat()
+          .map(s => s.trim().toLowerCase())
+          .filter(s => s.length > 1 && s.length < 50 && s !== '[object object]');
+        resumeSkills.push(...extracted);
+        
+      } else if (typeof skillSource === 'object') {
+        const extracted = Object.values(skillSource)
+          .flat()
+          .map(s => String(s).trim().toLowerCase())
+          .filter(s => s.length > 1 && s.length < 30);
+        resumeSkills.push(...extracted);
+      }
+    } catch (error) {
+      console.warn('Resume skill extraction failed for source:', error.message);
+    }
+  }
+
+  // Skill normalization and synonym mapping
+  const skillNormalization = {
+    'js': 'javascript',
+    'ts': 'typescript',
+    'py': 'python',
+    'reactjs': 'react',
+    'react.js': 'react',
+    'nodejs': 'node',
+    'node.js': 'node',
+    'expressjs': 'express',
+    'express.js': 'express',
+    'mongodb': 'mongo',
+    'postgresql': 'postgres',
+    'mysql': 'sql',
+    'html5': 'html',
+    'css3': 'css',
+    'github': 'git',
+    'gitlab': 'git'
+  };
+
+  // Normalize skills
+  resumeSkills = resumeSkills.map(skill => {
+    const normalized = skillNormalization[skill];
+    return normalized || skill;
+  });
+
+  // Remove duplicates and clean up
+  resumeSkills = [...new Set(resumeSkills)]
+    .filter(Boolean)
+    .filter(skill => skill.length > 1)
+    .slice(0, 30); // Limit to prevent noise
+
+  return resumeSkills;
+}
+
+/**
+ * IMPROVED: Calculate skill overlap with enhanced fuzzy matching
+ */
+function calculateSkillMatch(jobSkills, resumeSkills) {
+  let skillOverlap = 0;
+  let matchingSkills = [];
+  
+  if (!jobSkills.length || !resumeSkills.length) {
+    return { skillOverlap: 0, matchingSkills: [] };
+  }
+
+  // Create skill similarity matrix for better matching
+  const skillSimilarities = {
+    'javascript': ['js', 'ecmascript', 'node', 'nodejs'],
+    'python': ['py', 'python3'],
+    'react': ['reactjs', 'react.js'],
+    'angular': ['angularjs', 'angular.js'],
+    'vue': ['vuejs', 'vue.js'],
+    'node': ['nodejs', 'node.js'],
+    'express': ['expressjs', 'express.js'],
+    'mongodb': ['mongo'],
+    'postgresql': ['postgres', 'psql'],
+    'html': ['html5'],
+    'css': ['css3'],
+    'git': ['github', 'gitlab', 'version control']
+  };
+
+  // Enhanced matching algorithm
+  for (const jobSkill of jobSkills) {
+    let bestMatch = 0;
+    let bestMatchSkill = '';
+    
+    for (const resumeSkill of resumeSkills) {
+      let matchScore = 0;
+      
+      // Exact match (highest score)
+      if (jobSkill === resumeSkill) {
+        matchScore = 1.0;
+        bestMatchSkill = resumeSkill;
+      }
+      // Check similarity mappings
+      else if (skillSimilarities[jobSkill]?.includes(resumeSkill) || 
+               skillSimilarities[resumeSkill]?.includes(jobSkill)) {
+        matchScore = 0.9;
+        bestMatchSkill = `${jobSkill}≈${resumeSkill}`;
+      }
+      // Partial match - one contains the other
+      else if (jobSkill.includes(resumeSkill) && resumeSkill.length > 2) {
+        matchScore = 0.8;
+        bestMatchSkill = `${jobSkill}⊃${resumeSkill}`;
+      }
+      else if (resumeSkill.includes(jobSkill) && jobSkill.length > 2) {
+        matchScore = 0.8;
+        bestMatchSkill = `${resumeSkill}⊃${jobSkill}`;
+      }
+      // Fuzzy match - similar words
+      else if (calculateStringSimilarity(jobSkill, resumeSkill) > 0.7) {
+        matchScore = 0.6;
+        bestMatchSkill = `${jobSkill}~${resumeSkill}`;
+      }
+      
+      // Keep the best match for this job skill
+      if (matchScore > bestMatch) {
+        bestMatch = matchScore;
+        bestMatchSkill = bestMatchSkill || resumeSkill;
+      }
+    }
+    
+    // Add the best match if it's above threshold
+    if (bestMatch > 0.5) {
+      skillOverlap += bestMatch;
+      matchingSkills.push(bestMatchSkill);
+    }
+  }
+
+  return { skillOverlap, matchingSkills };
+}
+
+/**
+ * Calculate string similarity using Levenshtein distance
+ */
+function calculateStringSimilarity(str1, str2) {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  
+  if (len1 === 0) return len2 === 0 ? 1 : 0;
+  if (len2 === 0) return 0;
+  
+  const matrix = Array(len2 + 1).fill().map(() => Array(len1 + 1).fill(0));
+  
+  for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+  for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+  
+  for (let j = 1; j <= len2; j++) {
+    for (let i = 1; i <= len1; i++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j - 1][i] + 1,     // deletion
+        matrix[j][i - 1] + 1,     // insertion
+        matrix[j - 1][i - 1] + cost // substitution
+      );
+    }
+  }
+  
+  const maxLen = Math.max(len1, len2);
+  return (maxLen - matrix[len2][len1]) / maxLen;
+}
+
+/**
+ * IMPROVED: Enhanced scoring algorithm with better weights
+ */
+function calculateImprovedScore(embeddingScore, normalizedSkillScore, contentScore, jobSkills, resumeSkills) {
+  // Dynamic weight adjustment based on available data
+  let embeddingWeight = 0.5;
+  let skillWeight = 0.35;
+  let contentWeight = 0.15;
+  
+  // Adjust weights based on data quality
+  if (jobSkills.length === 0 || resumeSkills.length === 0) {
+    // If no skills available, rely more on embedding and content
+    embeddingWeight = 0.7;
+    skillWeight = 0.1;
+    contentWeight = 0.2;
+  } else if (embeddingScore < 0.1) {
+    // If embedding is poor, rely more on skills and content
+    embeddingWeight = 0.2;
+    skillWeight = 0.6;
+    contentWeight = 0.2;
+  }
+  
+  // Calculate base score with dynamic weights
+  let baseScore = (embeddingScore * embeddingWeight) + 
+                  (normalizedSkillScore * skillWeight) + 
+                  (contentScore * contentWeight);
+  
+  // Apply bonus for high skill matches
+  if (normalizedSkillScore > 0.8) {
+    baseScore *= 1.1; // 10% bonus for excellent skill match
+  } else if (normalizedSkillScore > 0.6) {
+    baseScore *= 1.05; // 5% bonus for good skill match
+  }
+  
+  // Apply bonus for high content quality
+  if (contentScore > 0.8) {
+    baseScore *= 1.05; // 5% bonus for high-quality resume
+  }
+  
+  // Apply penalty for very low embedding scores (indicates poor semantic match)
+  if (embeddingScore < 0.1 && normalizedSkillScore < 0.3) {
+    baseScore *= 0.8; // 20% penalty for poor overall match
+  }
+  
+  // Ensure score stays within bounds
+  return Math.max(0, Math.min(1, baseScore));
+}
+
+/**
  * Enhance job description using Gemini AI
  */
 async function enhanceJobDescription(title, description) {
@@ -418,56 +757,8 @@ app.get('/jobs/:jobId/match', async (req, res) => {
       return res.status(404).json({ error: 'No resumes with embeddings found.' });
     }
 
-    // Extract job skills from multiple sources (RESTORED ORIGINAL SUPERIOR LOGIC)
-    let jobSkills = [];
-
-    // Try to extract from enhanced description first
-    if (job.enhancedDescription) {
-      const skillPatterns = [
-        /(?:required|must have|essential)[\s\S]*?skills?[:\s]*([\w\s,.-]+)/i,
-        /skills?[:\s]*([\w\s,.-]+)/i,
-        /technologies?[:\s]*([\w\s,.-]+)/i,
-        /experience with[:\s]*([\w\s,.-]+)/i
-      ];
-
-      for (const pattern of skillPatterns) {
-        const match = job.enhancedDescription.match(pattern);
-        if (match) {
-          const extractedSkills = match[1]
-            .split(/[,\n\r\-•]/)
-            .map(s => s.trim().toLowerCase())
-            .filter(s => s.length > 1 && s.length < 30)
-            .slice(0, 20); // Limit to prevent noise
-          jobSkills.push(...extractedSkills);
-          break;
-        }
-      }
-    }
-
-    // Fallback to universal skills if no skills found (ENHANCED FOR ALL INDUSTRIES)
-    if (jobSkills.length === 0 && job.description) {
-      const universalSkills = [
-        // Tech Skills
-        'javascript', 'python', 'java', 'react', 'node', 'sql', 'html', 'css', 'aws', 'docker', 'git',
-        // Business Skills  
-        'management', 'leadership', 'communication', 'teamwork', 'project management', 'analysis',
-        // Healthcare Skills
-        'nursing', 'patient care', 'medical', 'healthcare', 'clinical', 'emergency', 'treatment',
-        // Finance Skills
-        'accounting', 'finance', 'investment', 'banking', 'audit', 'excel', 'financial analysis',
-        // Education Skills
-        'teaching', 'curriculum', 'education', 'training', 'classroom management', 'assessment',
-        // Marketing Skills
-        'marketing', 'seo', 'social media', 'branding', 'analytics', 'campaign management'
-      ];
-      jobSkills = universalSkills.filter(skill =>
-        job.description.toLowerCase().includes(skill)
-      );
-    }
-
-    // Remove duplicates and clean up
-    jobSkills = [...new Set(jobSkills)].filter(Boolean);
-
+    // IMPROVED: Extract job skills with better accuracy
+    const jobSkills = extractJobSkills(job);
     console.log('Extracted job skills:', jobSkills);
 
     const matches = resumes.map(r => {
@@ -525,98 +816,20 @@ app.get('/jobs/:jobId/match', async (req, res) => {
         }
       }
 
-      // Extract resume skills from multiple possible fields - RESTORED ORIGINAL COMPLEX LOGIC
-      let resumeSkills = [];
-      const skillSources = [
-        r.parsedResume?.skills,
-        r.parsedResume?.skills?.featuredSkills,
-        r.parsedResume?.skills?.descriptions,
-        r.parsedResume?.technicalSkills,
-        r.parsedResume?.technologies
-      ].filter(Boolean);
+      // IMPROVED: Extract resume skills with better accuracy
+      const resumeSkills = extractResumeSkills(r.parsedResume);
 
-      for (const skillSource of skillSources) {
-        try {
-          if (typeof skillSource === 'string') {
-            const extracted = skillSource
-              .split(/[,\n\r\-•|]/)
-              .map(s => s.trim().toLowerCase())
-              .filter(s => s.length > 1 && s.length < 30);
-            resumeSkills.push(...extracted);
-          } else if (Array.isArray(skillSource)) {
-            const extracted = skillSource
-              .map(s => {
-                if (typeof s === 'object' && s.skill) {
-                  // Extract skill text and split by common delimiters
-                  return s.skill.split(/[,;:|]/).map(skill => skill.trim()).filter(Boolean);
-                }
-                return String(s);
-              })
-              .flat() // Flatten in case we got arrays from splitting
-              .map(s => s.trim().toLowerCase())
-              .filter(s => s.length > 1 && s.length < 50 && s !== '[object object]');
-            resumeSkills.push(...extracted);
-          } else if (typeof skillSource === 'object') {
-            // Handle nested skill objects
-            const extracted = Object.values(skillSource)
-              .flat()
-              .map(s => String(s).trim().toLowerCase())
-              .filter(s => s.length > 1 && s.length < 30);
-            resumeSkills.push(...extracted);
-          }
-        } catch (error) {
-          console.warn('Resume skill extraction failed for source:', error.message);
-        }
-      }
-
-      // Remove duplicates and clean up
-      resumeSkills = [...new Set(resumeSkills)].filter(Boolean);
-
-      // Calculate skill overlap with fuzzy matching - RESTORED ORIGINAL SOPHISTICATED LOGIC
-      let skillOverlap = 0;
-      let matchingSkills = [];
-
-      if (jobSkills.length > 0 && resumeSkills.length > 0) {
-        for (const jobSkill of jobSkills) {
-          for (const resumeSkill of resumeSkills) {
-            // Exact match
-            if (jobSkill === resumeSkill) {
-              skillOverlap++;
-              matchingSkills.push(jobSkill);
-            }
-            // Partial match (contains) - check both directions
-            else if (jobSkill.includes(resumeSkill) || resumeSkill.includes(jobSkill)) {
-              skillOverlap += 0.5;
-              matchingSkills.push(`${jobSkill}~${resumeSkill}`);
-            }
-            // Special case: check if job skill appears anywhere in resume skill text
-            else if (resumeSkill.includes(jobSkill)) {
-              skillOverlap += 0.8; // High score for finding the skill within text
-              matchingSkills.push(`${jobSkill} (found in: ${resumeSkill})`);
-            }
-            // Additional check: split resume skills by common separators and check each part
-            else {
-              const resumeSkillParts = resumeSkill.split(/[,;:|\/\s]+/).map(part => part.trim().toLowerCase()).filter(Boolean);
-              for (const part of resumeSkillParts) {
-                if (part === jobSkill || part.includes(jobSkill) || jobSkill.includes(part)) {
-                  skillOverlap += 0.9; // Very high score for exact match in parts
-                  matchingSkills.push(`${jobSkill} (matched: ${part})`);
-                  break; // Only count once per job skill
-                }
-              }
-            }
-          }
-        }
-      }
+      // IMPROVED: Calculate skill overlap with enhanced fuzzy matching
+      const { skillOverlap, matchingSkills } = calculateSkillMatch(jobSkills, resumeSkills);
 
       // Calculate composite score with content quality weighting - RESTORED ORIGINAL
       const normalizedSkillScore = jobSkills.length > 0 ? skillOverlap / jobSkills.length : 0;
 
-      // Weight the final score by content completeness and embedding quality
-      const baseScore = (embeddingScore * 0.6) + (normalizedSkillScore * 0.3) + (contentScore * 0.1);
+      // IMPROVED: Enhanced scoring algorithm with better weights
+      const baseScore = calculateImprovedScore(embeddingScore, normalizedSkillScore, contentScore, jobSkills, resumeSkills);
 
-      // Apply minimum thresholds (more lenient)
-      if (baseScore < 0.05 || contentScore < 0.1) {
+      // Apply improved thresholds
+      if (baseScore < 0.08 || contentScore < 0.08) {
         console.log(`Filtering out ${possibleName || 'Unnamed'}: baseScore=${baseScore.toFixed(4)}, contentScore=${contentScore.toFixed(4)}`);
         return null;
       }

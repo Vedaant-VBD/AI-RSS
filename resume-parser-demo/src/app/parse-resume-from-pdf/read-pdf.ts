@@ -1,9 +1,16 @@
-// Getting pdfjs to work is tricky. The following 3 lines would make it work
-// https://stackoverflow.com/a/63486898/7699841
-import * as pdfjs from "pdfjs-dist";
-// @ts-ignore
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+  // Getting pdfjs to work is tricky. The following setup makes it work with Next.js
+let pdfjs: any;
+
+if (typeof window !== 'undefined') {
+  // Client-side: import regular pdfjs
+  pdfjs = require("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+} else {
+  // Server-side: Use dynamic import to avoid build issues
+  pdfjs = require("pdfjs-dist");
+  // Set up for server-side rendering without worker
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+}
 
 import type { TextItem as PdfjsTextItem } from "pdfjs-dist/types/src/display/api";
 import type { TextItem, TextItems } from "../parse-resume-from-pdf/types";
